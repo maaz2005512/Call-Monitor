@@ -3,227 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Vapi Pro Monitor</title>
+    <title>⚡ Vapi Universal Decoder</title>
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #000; 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0; 
-        }
+        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #000; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        
+        /* Visualizer */
+        .visualizer { display: flex; justify-content: center; align-items: flex-end; height: 50px; gap: 4px; margin: 20px 0; }
+        .bar { width: 8px; background: #22c55e; border-radius: 4px; height: 5px; transition: height 0.05s ease; }
 
-        .monitor-card { 
-            background: #111; 
-            padding: 2rem; 
-            border-radius: 20px; 
-            border: 1px solid #333; 
-            width: 90%; 
-            max-width: 420px; 
-            text-align: center;
-        }
-
-        .visualizer {
-            height: 60px;
-            background: #222;
-            margin: 20px 0;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bar {
-            width: 6px;
-            background: #4ade80;
-            margin: 0 2px;
-            height: 10px;
-            border-radius: 4px;
-            transition: height 0.1s ease;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: #333;
-            color: #888;
-            margin-bottom: 15px;
-        }
-        .status-badge.live { background: #dc2626; color: white; animation: pulse 2s infinite; }
-
-        .latency-stat { font-size: 12px; color: #666; margin-top: 10px; font-family: monospace; }
-
-        select {
-            background: #222; color: white; border: 1px solid #444; padding: 10px; 
-            width: 100%; margin-bottom: 15px; border-radius: 8px; outline: none;
-        }
-
-        button { 
-            background: white; color: black; border: none; padding: 16px; 
-            border-radius: 12px; font-weight: 700; font-size: 16px; width: 100%; cursor: pointer;
-        }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        /* Controls */
+        select, button { width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; font-size: 16px; border: none; outline: none; }
+        select { background: #222; color: #fff; border: 1px solid #444; }
+        
+        .btn-primary { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-sync { background: #dc2626; color: white; font-weight: 700; cursor: pointer; margin-top: 15px; display: none; }
+        
+        .stat-row { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 15px; font-family: monospace; }
+        .badge { background: #333; padding: 4px 8px; border-radius: 4px; color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        .badge.live { background: #22c55e; color: black; box-shadow: 0 0 10px #22c55e; }
     </style>
 </head>
 <body>
 
-<div class="monitor-card">
-    <div id="statusBadge" class="status-badge">DISCONNECTED</div>
+<div class="card">
+    <div style="margin-bottom: 15px;"><span id="statusBadge" class="badge">Disconnected</span></div>
     
-    <h2 style="margin: 0 0 10px 0;">Vapi Realtime Monitor</h2>
-    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
-        Professional low-latency PCM decoder.
-    </p>
+    <h2 style="margin: 0;">Universal Receiver</h2>
+    <p style="color: #666; font-size: 13px; margin: 5px 0 20px 0;">Supports Turbo, 11Labs & High-Def PCM</p>
 
     <div class="visualizer" id="visualizer">
         <div class="bar"></div><div class="bar"></div><div class="bar"></div>
         <div class="bar"></div><div class="bar"></div>
     </div>
 
-    <label style="font-size: 12px; color: #888; display: block; text-align: left; margin-bottom: 5px;">Sample Rate (Hz)</label>
-    <select id="rateSelect" onchange="updateAudioEngine()">
-        <option value="24000" selected>24,000 Hz (Turbo/High Quality)</option>
-        <option value="16000">16,000 Hz (Standard)</option>
-        <option value="8000">8,000 Hz (Phone Line)</option>
-        <option value="44100">44,100 Hz (Music)</option>
-        <option value="48000">48,000 Hz (Max)</option>
-    </select>
+    <div style="text-align: left; margin-bottom: 5px;">
+        <label style="font-size: 12px; color: #888; margin-left: 5px;">AUDIO ENGINE RATE</label>
+        <select id="rateSelect" onchange="restartEngine()">
+            <option value="48000">48,000 Hz (Max Quality)</option>
+            <option value="44100" selected>44,100 Hz (Standard High-Def)</option>
+            <option value="24000">24,000 Hz (Turbo Models)</option>
+            <option value="16000">16,000 Hz (Basic)</option>
+            <option value="8000">8,000 Hz (Phone)</option>
+        </select>
+    </div>
 
-    <button id="btn" onclick="startEngine()">Start Listening</button>
-    <div id="latencyStat" class="latency-stat">Latency: 0ms</div>
+    <button id="mainBtn" class="btn-primary" onclick="startCall()">🔴 Connect Audio</button>
+    <button id="syncBtn" class="btn-sync" onclick="forceSync()">⚡ SKIP LATENCY (Reset)</button>
+
+    <div class="stat-row">
+        <span id="bufferStat">Buffer: 0ms</span>
+        <span id="packStat">Packets: 0</span>
+    </div>
 </div>
 
 <script>
-    let socket;
-    let audioCtx;
+    let socket = null;
+    let audioCtx = null;
     let nextTime = 0;
     let wssUrl = null;
-    let analyser;
-    let dataArray;
+    let packetCount = 0;
     let animationId;
+    let analyser;
 
-    // 1. Get URL from Browser Link
+    // 1. Grab URL automatically
     window.onload = () => {
         const params = new URLSearchParams(window.location.search);
         wssUrl = params.get('call');
         if (!wssUrl) {
-            document.getElementById('btn').innerText = "❌ No Link Detected";
-            document.getElementById('btn').disabled = true;
+            document.getElementById('mainBtn').innerText = "❌ No URL Found";
+            document.getElementById('mainBtn').disabled = true;
+            document.getElementById('mainBtn').style.background = "#333";
         }
     };
 
-    function startEngine() {
+    function startCall() {
         if (!wssUrl) return;
 
-        // Initialize Audio Context
+        // Init Audio Context
         const rate = parseInt(document.getElementById('rateSelect').value);
         audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 32;
-        analyser.connect(audioCtx.destination); // Connect analyser to speakers
         
+        // Setup Visualizer
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.connect(audioCtx.destination);
+
         // Connect WebSocket
         socket = new WebSocket(wssUrl);
         socket.binaryType = "arraybuffer";
 
         // UI Updates
-        const btn = document.getElementById('btn');
-        btn.disabled = true;
-        btn.innerText = "Connecting...";
+        document.getElementById('mainBtn').disabled = true;
+        document.getElementById('mainBtn').innerText = "Connecting...";
 
         socket.onopen = () => {
-            document.getElementById('statusBadge').innerText = "🔴 LIVE AUDIO";
+            document.getElementById('statusBadge').innerText = "LIVE STREAM";
             document.getElementById('statusBadge').classList.add("live");
-            btn.innerText = "Listening...";
-            animateVisualizer();
+            document.getElementById('mainBtn').style.display = "none";
+            document.getElementById('syncBtn').style.display = "block"; // Show Panic Button
+            nextTime = audioCtx.currentTime + 0.1; // Start buffer slightly ahead
+            animate();
         };
 
         socket.onmessage = (event) => {
             if (event.data instanceof ArrayBuffer) {
-                scheduleBuffer(event.data);
+                packetCount++;
+                document.getElementById('packStat').innerText = `Packets: ${packetCount}`;
+                playChunk(event.data);
             }
         };
 
         socket.onclose = () => {
-            document.getElementById('statusBadge').innerText = "CALL ENDED";
+            document.getElementById('statusBadge').innerText = "ENDED";
             document.getElementById('statusBadge').classList.remove("live");
             cancelAnimationFrame(animationId);
         };
     }
 
-    // ⚡ THE MAGIC: Jitter Buffer & Drift Correction
-    function scheduleBuffer(arrayBuffer) {
-        // 1. Decode Raw PCM (Int16 -> Float32)
+    // ⚡ CORE AUDIO ENGINE
+    function playChunk(arrayBuffer) {
+        // Convert Raw PCM (Int16) to Float32
         const int16 = new Int16Array(arrayBuffer);
         const float32 = new Float32Array(int16.length);
-        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+        for (let i = 0; i < int16.length; i++) {
+            float32[i] = int16[i] / 32768; 
+        }
 
-        // 2. Create Audio Buffer
-        const buffer = audioCtx.createBuffer(1, float32.length, audioCtx.sampleRate);
+        // Create Buffer with SELECTED Rate
+        const selectedRate = parseInt(document.getElementById('rateSelect').value);
+        const buffer = audioCtx.createBuffer(1, float32.length, selectedRate);
         buffer.getChannelData(0).set(float32);
 
-        // 3. Jitter Correction Logic
-        // If nextTime is in the past (we are lagging), jump to "now"
+        // 🧠 LATENCY KILLER LOGIC
+        // If nextTime is in the past (lag), reset to now
         if (nextTime < audioCtx.currentTime) {
-            nextTime = audioCtx.currentTime + 0.05; // Add tiny buffer (50ms)
+            nextTime = audioCtx.currentTime;
         }
         
-        // If nextTime is TOO far in future (latency buildup), skip ahead
-        // This is what fixes the "late" feeling
-        if (nextTime > audioCtx.currentTime + 0.5) {
-            console.log("Drift detected: Skipping ahead to sync");
+        // If nextTime is too far in future (>300ms), we are drifting. Skip ahead.
+        // This solves the "late" audio problem.
+        if (nextTime > audioCtx.currentTime + 0.3) {
+            // console.log("Drift detected. Skipping...");
             nextTime = audioCtx.currentTime + 0.05;
         }
 
-        // 4. Play
+        // Schedule Playback
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
-        source.connect(analyser); // Connect to visualizer first, then speakers
+        source.connect(analyser);
         source.start(nextTime);
         
-        // Advance time pointer
         nextTime += buffer.duration;
 
-        // Update UI Latency Stat
-        const latency = Math.round((nextTime - audioCtx.currentTime) * 1000);
-        document.getElementById('latencyStat').innerText = `Buffer: ${latency}ms`;
-    }
-
-    function updateAudioEngine() {
-        if(audioCtx) {
-            audioCtx.close();
-            nextTime = 0; // Reset drift
-            startEngine(); // Restart with new rate
-        }
-    }
-
-    // Optional: Simple Visualizer to prove audio is playing
-    function animateVisualizer() {
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        const bars = document.querySelectorAll('.bar');
+        // Update Stats
+        const lag = Math.round((nextTime - audioCtx.currentTime) * 1000);
+        document.getElementById('bufferStat').innerText = `Buffer: ${lag}ms`;
         
-        function draw() {
-            animationId = requestAnimationFrame(draw);
-            analyser.getByteFrequencyData(dataArray);
-            
-            // Update 5 bars based on frequency data
-            for(let i=0; i<5; i++) {
-                const height = Math.max(10, dataArray[i*2] / 2);
-                if(bars[i]) bars[i].style.height = height + 'px';
-            }
+        // Color code the lag
+        document.getElementById('bufferStat').style.color = lag > 300 ? "#ef4444" : "#666";
+    }
+
+    function forceSync() {
+        if(audioCtx) {
+            nextTime = audioCtx.currentTime; // Hard reset time
+            document.getElementById('bufferStat').innerText = "Synced!";
         }
-        draw();
+    }
+
+    function restartEngine() {
+        if(socket && socket.readyState === WebSocket.OPEN) {
+            audioCtx.close().then(() => {
+                // Re-init with new rate
+                const rate = parseInt(document.getElementById('rateSelect').value);
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 64;
+                analyser.connect(audioCtx.destination);
+                nextTime = audioCtx.currentTime;
+            });
+        }
+    }
+
+    // Visualizer Loop
+    function animate() {
+        if(!analyser) return;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        const bars = document.querySelectorAll('.bar');
+        bars.forEach((bar, i) => {
+            const h = Math.max(5, data[i] / 3);
+            bar.style.height = `${h}px`;
+        });
+        animationId = requestAnimationFrame(animate);
     }
 </script>
 
