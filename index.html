@@ -5,15 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔴 Vapi Live Monitor</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }
-        .card { background: #222; padding: 2.5rem; border-radius: 16px; border: 1px solid #333; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 400px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #111; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; /* Changed from height to min-height for better mobile scrolling */
+            margin: 0; 
+            text-align: center; 
+        }
+
+        .card { 
+            background: #222; 
+            padding: 2.5rem; 
+            border-radius: 16px; 
+            border: 1px solid #333; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            width: 90%; /* UPDATED: Prevents card from touching screen edges */
+            max-width: 400px; 
+            box-sizing: border-box; /* Ensures padding doesn't break width */
+        }
+
         h2 { margin-top: 0; font-weight: 600; }
-        p { color: #aaa; margin-bottom: 30px; }
+        p { color: #aaa; margin-bottom: 30px; line-height: 1.5; }
         
         button { 
             background: #2563eb; color: white; border: none; padding: 16px 32px; 
             border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: 600; 
             transition: all 0.2s; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            -webkit-tap-highlight-color: transparent; /* Removes blue highlight on mobile tap */
         }
         button:hover { background: #1d4ed8; transform: translateY(-2px); }
         button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -25,6 +47,20 @@
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+
+        /* 📱 MOBILE SPECIFIC TWEAKS */
+        @media (max-width: 480px) {
+            .card {
+                padding: 1.5rem; /* Reduce padding on small screens */
+            }
+            h2 {
+                font-size: 1.5rem; /* Smaller title */
+            }
+            button {
+                padding: 14px 20px; /* Slightly more compact button */
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -48,13 +84,11 @@
     let nextStartTime = 0;
     let wssUrl = null;
 
-    // 1. On Load: Grab the URL from the browser link (?call=wss://...)
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
-        wssUrl = params.get('call'); // Look for ?call= parameter
+        wssUrl = params.get('call'); 
 
         if (wssUrl) {
-            // Extract Call ID for display (optional beautification)
             const parts = wssUrl.split('/');
             const callId = parts[parts.length - 2]; 
             document.getElementById('callIdDisplay').innerText = "ID: " + callId.slice(0, 8) + "...";
@@ -73,7 +107,6 @@
         const statusText = document.getElementById('statusText');
         const dot = document.getElementById('dot');
 
-        // AudioContext must be resumed/started on a user click
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         }
