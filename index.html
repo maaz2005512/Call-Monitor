@@ -3,159 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔴 Vapi Live Monitor</title>
+    <title>⚡ Vapi Pro Monitor</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #111; 
+            background: #000; 
             color: white; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            min-height: 100vh; /* Changed from height to min-height for better mobile scrolling */
+            min-height: 100vh; 
             margin: 0; 
-            text-align: center; 
         }
 
-        .card { 
-            background: #222; 
-            padding: 2.5rem; 
-            border-radius: 16px; 
+        .monitor-card { 
+            background: #111; 
+            padding: 2rem; 
+            border-radius: 20px; 
             border: 1px solid #333; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
-            width: 90%; /* UPDATED: Prevents card from touching screen edges */
-            max-width: 400px; 
-            box-sizing: border-box; /* Ensures padding doesn't break width */
+            width: 90%; 
+            max-width: 420px; 
+            text-align: center;
         }
 
-        h2 { margin-top: 0; font-weight: 600; }
-        p { color: #aaa; margin-bottom: 30px; line-height: 1.5; }
-        
+        .visualizer {
+            height: 60px;
+            background: #222;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar {
+            width: 6px;
+            background: #4ade80;
+            margin: 0 2px;
+            height: 10px;
+            border-radius: 4px;
+            transition: height 0.1s ease;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #333;
+            color: #888;
+            margin-bottom: 15px;
+        }
+        .status-badge.live { background: #dc2626; color: white; animation: pulse 2s infinite; }
+
+        .latency-stat { font-size: 12px; color: #666; margin-top: 10px; font-family: monospace; }
+
+        select {
+            background: #222; color: white; border: 1px solid #444; padding: 10px; 
+            width: 100%; margin-bottom: 15px; border-radius: 8px; outline: none;
+        }
+
         button { 
-            background: #2563eb; color: white; border: none; padding: 16px 32px; 
-            border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: 600; 
-            transition: all 0.2s; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-            -webkit-tap-highlight-color: transparent; /* Removes blue highlight on mobile tap */
+            background: white; color: black; border: none; padding: 16px; 
+            border-radius: 12px; font-weight: 700; font-size: 16px; width: 100%; cursor: pointer;
         }
-        button:hover { background: #1d4ed8; transform: translateY(-2px); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
-        
-        .status-dot { height: 12px; width: 12px; background-color: #666; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .live { background-color: #ef4444; box-shadow: 0 0 12px #ef4444; animation: pulse 2s infinite; }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
 
-        /* 📱 MOBILE SPECIFIC TWEAKS */
-        @media (max-width: 480px) {
-            .card {
-                padding: 1.5rem; /* Reduce padding on small screens */
-            }
-            h2 {
-                font-size: 1.5rem; /* Smaller title */
-            }
-            button {
-                padding: 14px 20px; /* Slightly more compact button */
-                font-size: 16px;
-            }
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div style="margin-bottom: 20px;">
-        <span id="dot" class="status-dot"></span>
-        <span id="statusText">Ready to Connect</span>
+<div class="monitor-card">
+    <div id="statusBadge" class="status-badge">DISCONNECTED</div>
+    
+    <h2 style="margin: 0 0 10px 0;">Vapi Realtime Monitor</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+        Professional low-latency PCM decoder.
+    </p>
+
+    <div class="visualizer" id="visualizer">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div>
     </div>
 
-    <h2 id="callTitle">Incoming Call</h2>
-    <p id="callIdDisplay">Waiting for link...</p>
-    
-    <button id="actionBtn" onclick="startStream()">🔴 Join & Listen</button>
+    <label style="font-size: 12px; color: #888; display: block; text-align: left; margin-bottom: 5px;">Sample Rate (Hz)</label>
+    <select id="rateSelect" onchange="updateAudioEngine()">
+        <option value="24000" selected>24,000 Hz (Turbo/High Quality)</option>
+        <option value="16000">16,000 Hz (Standard)</option>
+        <option value="8000">8,000 Hz (Phone Line)</option>
+        <option value="44100">44,100 Hz (Music)</option>
+        <option value="48000">48,000 Hz (Max)</option>
+    </select>
+
+    <button id="btn" onclick="startEngine()">Start Listening</button>
+    <div id="latencyStat" class="latency-stat">Latency: 0ms</div>
 </div>
 
 <script>
     let socket;
-    let audioContext;
-    let nextStartTime = 0;
+    let audioCtx;
+    let nextTime = 0;
     let wssUrl = null;
+    let analyser;
+    let dataArray;
+    let animationId;
 
-    window.onload = function() {
+    // 1. Get URL from Browser Link
+    window.onload = () => {
         const params = new URLSearchParams(window.location.search);
-        wssUrl = params.get('call'); 
-
-        if (wssUrl) {
-            const parts = wssUrl.split('/');
-            const callId = parts[parts.length - 2]; 
-            document.getElementById('callIdDisplay').innerText = "ID: " + callId.slice(0, 8) + "...";
-        } else {
-            document.getElementById('statusText').innerText = "Error: No Link Found";
-            document.getElementById('callIdDisplay').innerText = "Invalid Link";
-            document.getElementById('actionBtn').disabled = true;
-            document.getElementById('actionBtn').innerText = "Missing URL";
+        wssUrl = params.get('call');
+        if (!wssUrl) {
+            document.getElementById('btn').innerText = "❌ No Link Detected";
+            document.getElementById('btn').disabled = true;
         }
     };
 
-    function startStream() {
+    function startEngine() {
         if (!wssUrl) return;
 
-        const btn = document.getElementById('actionBtn');
-        const statusText = document.getElementById('statusText');
-        const dot = document.getElementById('dot');
-
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        }
-
+        // Initialize Audio Context
+        const rate = parseInt(document.getElementById('rateSelect').value);
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 32;
+        analyser.connect(audioCtx.destination); // Connect analyser to speakers
+        
+        // Connect WebSocket
         socket = new WebSocket(wssUrl);
         socket.binaryType = "arraybuffer";
 
+        // UI Updates
+        const btn = document.getElementById('btn');
         btn.disabled = true;
         btn.innerText = "Connecting...";
 
         socket.onopen = () => {
-            statusText.innerText = "LIVE MONITORING";
-            statusText.style.color = "#ef4444";
-            dot.classList.add("live");
+            document.getElementById('statusBadge').innerText = "🔴 LIVE AUDIO";
+            document.getElementById('statusBadge').classList.add("live");
             btn.innerText = "Listening...";
+            animateVisualizer();
         };
 
         socket.onmessage = (event) => {
             if (event.data instanceof ArrayBuffer) {
-                playPcmChunk(event.data);
+                scheduleBuffer(event.data);
             }
         };
 
         socket.onclose = () => {
-            statusText.innerText = "Call Ended";
-            statusText.style.color = "#888";
-            dot.classList.remove("live");
-            btn.innerText = "Call Finished";
+            document.getElementById('statusBadge').innerText = "CALL ENDED";
+            document.getElementById('statusBadge').classList.remove("live");
+            cancelAnimationFrame(animationId);
         };
     }
 
-    function playPcmChunk(arrayBuffer) {
-        const int16Data = new Int16Array(arrayBuffer);
-        const float32Data = new Float32Array(int16Data.length);
-        for (let i = 0; i < int16Data.length; i++) {
-            float32Data[i] = int16Data[i] / 32768; 
-        }
-        const buffer = audioContext.createBuffer(1, float32Data.length, 16000);
-        buffer.getChannelData(0).set(float32Data);
-        
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioContext.destination);
+    // ⚡ THE MAGIC: Jitter Buffer & Drift Correction
+    function scheduleBuffer(arrayBuffer) {
+        // 1. Decode Raw PCM (Int16 -> Float32)
+        const int16 = new Int16Array(arrayBuffer);
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
 
-        if (nextStartTime < audioContext.currentTime) {
-            nextStartTime = audioContext.currentTime;
+        // 2. Create Audio Buffer
+        const buffer = audioCtx.createBuffer(1, float32.length, audioCtx.sampleRate);
+        buffer.getChannelData(0).set(float32);
+
+        // 3. Jitter Correction Logic
+        // If nextTime is in the past (we are lagging), jump to "now"
+        if (nextTime < audioCtx.currentTime) {
+            nextTime = audioCtx.currentTime + 0.05; // Add tiny buffer (50ms)
         }
-        source.start(nextStartTime);
-        nextStartTime += buffer.duration;
+        
+        // If nextTime is TOO far in future (latency buildup), skip ahead
+        // This is what fixes the "late" feeling
+        if (nextTime > audioCtx.currentTime + 0.5) {
+            console.log("Drift detected: Skipping ahead to sync");
+            nextTime = audioCtx.currentTime + 0.05;
+        }
+
+        // 4. Play
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(analyser); // Connect to visualizer first, then speakers
+        source.start(nextTime);
+        
+        // Advance time pointer
+        nextTime += buffer.duration;
+
+        // Update UI Latency Stat
+        const latency = Math.round((nextTime - audioCtx.currentTime) * 1000);
+        document.getElementById('latencyStat').innerText = `Buffer: ${latency}ms`;
+    }
+
+    function updateAudioEngine() {
+        if(audioCtx) {
+            audioCtx.close();
+            nextTime = 0; // Reset drift
+            startEngine(); // Restart with new rate
+        }
+    }
+
+    // Optional: Simple Visualizer to prove audio is playing
+    function animateVisualizer() {
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        const bars = document.querySelectorAll('.bar');
+        
+        function draw() {
+            animationId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Update 5 bars based on frequency data
+            for(let i=0; i<5; i++) {
+                const height = Math.max(10, dataArray[i*2] / 2);
+                if(bars[i]) bars[i].style.height = height + 'px';
+            }
+        }
+        draw();
     }
 </script>
 
