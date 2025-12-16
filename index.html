@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 Vapi Live Monitor</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }
+        .card { background: #222; padding: 2.5rem; border-radius: 16px; border: 1px solid #333; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 400px; }
+        h2 { margin-top: 0; font-weight: 600; }
+        p { color: #aaa; margin-bottom: 30px; }
+        
+        button { 
+            background: #2563eb; color: white; border: none; padding: 16px 32px; 
+            border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: 600; 
+            transition: all 0.2s; width: 100%; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        button:hover { background: #1d4ed8; transform: translateY(-2px); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .status-dot { height: 12px; width: 12px; background-color: #666; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .live { background-color: #ef4444; box-shadow: 0 0 12px #ef4444; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div style="margin-bottom: 20px;">
+        <span id="dot" class="status-dot"></span>
+        <span id="statusText">Ready to Connect</span>
+    </div>
+
+    <h2 id="callTitle">Incoming Call</h2>
+    <p id="callIdDisplay">Waiting for link...</p>
+    
+    <button id="actionBtn" onclick="startStream()">🔴 Join & Listen</button>
+</div>
+
+<script>
+    let socket;
+    let audioContext;
+    let nextStartTime = 0;
+    let wssUrl = null;
+
+    // 1. On Load: Grab the URL from the browser link (?call=wss://...)
+    window.onload = function() {
+        const params = new URLSearchParams(window.location.search);
+        wssUrl = params.get('call'); // Look for ?call= parameter
+
+        if (wssUrl) {
+            // Extract Call ID for display (optional beautification)
+            const parts = wssUrl.split('/');
+            const callId = parts[parts.length - 2]; 
+            document.getElementById('callIdDisplay').innerText = "ID: " + callId.slice(0, 8) + "...";
+        } else {
+            document.getElementById('statusText').innerText = "Error: No Link Found";
+            document.getElementById('callIdDisplay').innerText = "Invalid Link";
+            document.getElementById('actionBtn').disabled = true;
+            document.getElementById('actionBtn').innerText = "Missing URL";
+        }
+    };
+
+    function startStream() {
+        if (!wssUrl) return;
+
+        const btn = document.getElementById('actionBtn');
+        const statusText = document.getElementById('statusText');
+        const dot = document.getElementById('dot');
+
+        // AudioContext must be resumed/started on a user click
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        }
+
+        socket = new WebSocket(wssUrl);
+        socket.binaryType = "arraybuffer";
+
+        btn.disabled = true;
+        btn.innerText = "Connecting...";
+
+        socket.onopen = () => {
+            statusText.innerText = "LIVE MONITORING";
+            statusText.style.color = "#ef4444";
+            dot.classList.add("live");
+            btn.innerText = "Listening...";
+        };
+
+        socket.onmessage = (event) => {
+            if (event.data instanceof ArrayBuffer) {
+                playPcmChunk(event.data);
+            }
+        };
+
+        socket.onclose = () => {
+            statusText.innerText = "Call Ended";
+            statusText.style.color = "#888";
+            dot.classList.remove("live");
+            btn.innerText = "Call Finished";
+        };
+    }
+
+    function playPcmChunk(arrayBuffer) {
+        const int16Data = new Int16Array(arrayBuffer);
+        const float32Data = new Float32Array(int16Data.length);
+        for (let i = 0; i < int16Data.length; i++) {
+            float32Data[i] = int16Data[i] / 32768; 
+        }
+        const buffer = audioContext.createBuffer(1, float32Data.length, 16000);
+        buffer.getChannelData(0).set(float32Data);
+        
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+
+        if (nextStartTime < audioContext.currentTime) {
+            nextStartTime = audioContext.currentTime;
+        }
+        source.start(nextStartTime);
+        nextStartTime += buffer.duration;
+    }
+</script>
+
+</body>
+</html>
