@@ -2,59 +2,87 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Vapi Universal Decoder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚡ Vapi Monitor</title>
     <style>
-        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #000; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #111; border: 1px solid #333; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        /* 📱 MOBILE LAYOUT FIXES */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #000; 
+            color: white; 
+            margin: 0; 
+            padding: 0;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100dvh; /* FIX: Dynamic height handles mobile address bars */
+            overflow: hidden; /* Prevents scroll bounce */
+        }
+
+        .card { 
+            background: #111; 
+            border: 1px solid #333; 
+            padding: 24px; 
+            border-radius: 24px; 
+            width: 85%; 
+            max-width: 380px; 
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
         
-        /* Visualizer */
-        .visualizer { display: flex; justify-content: center; align-items: flex-end; height: 50px; gap: 4px; margin: 20px 0; }
-        .bar { width: 8px; background: #22c55e; border-radius: 4px; height: 5px; transition: height 0.05s ease; }
+        /* Audio Visualizer */
+        .visualizer { display: flex; justify-content: center; align-items: flex-end; height: 50px; gap: 6px; margin: 25px 0; }
+        .bar { width: 8px; background: #4ade80; border-radius: 99px; height: 5px; transition: height 0.05s ease; }
 
         /* Controls */
-        select, button { width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; font-size: 16px; border: none; outline: none; }
-        select { background: #222; color: #fff; border: 1px solid #444; }
+        select { 
+            width: 100%; padding: 16px; margin-top: 10px; border-radius: 12px; 
+            font-size: 16px; border: 1px solid #444; background: #222; color: #fff; 
+            appearance: none; text-align: center;
+        }
         
-        .btn-primary { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-sync { background: #dc2626; color: white; font-weight: 700; cursor: pointer; margin-top: 15px; display: none; }
-        
-        .stat-row { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 15px; font-family: monospace; }
-        .badge { background: #333; padding: 4px 8px; border-radius: 4px; color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-        .badge.live { background: #22c55e; color: black; box-shadow: 0 0 10px #22c55e; }
+        button { 
+            width: 100%; padding: 18px; margin-top: 15px; border-radius: 14px; 
+            font-size: 17px; font-weight: 700; border: none; cursor: pointer; 
+            transition: transform 0.1s;
+        }
+        .btn-start { background: #2563eb; color: white; }
+        .btn-sync { background: #dc2626; color: white; display: none; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+
+        .stat-row { 
+            display: flex; justify-content: space-between; font-size: 11px; 
+            color: #666; margin-top: 20px; font-family: monospace; text-transform: uppercase; letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div style="margin-bottom: 15px;"><span id="statusBadge" class="badge">Disconnected</span></div>
-    
-    <h2 style="margin: 0;">Universal Receiver</h2>
-    <p style="color: #666; font-size: 13px; margin: 5px 0 20px 0;">Supports Turbo, 11Labs & High-Def PCM</p>
+    <div style="color: #888; font-size: 12px; margin-bottom: 5px; font-weight: 600;">LIVE STREAM</div>
+    <h2 style="margin: 0; font-weight: 800; letter-spacing: -0.5px;">Vapi Receiver</h2>
 
     <div class="visualizer" id="visualizer">
         <div class="bar"></div><div class="bar"></div><div class="bar"></div>
         <div class="bar"></div><div class="bar"></div>
     </div>
 
-    <div style="text-align: left; margin-bottom: 5px;">
-        <label style="font-size: 12px; color: #888; margin-left: 5px;">AUDIO ENGINE RATE</label>
-        <select id="rateSelect" onchange="restartEngine()">
-            <option value="48000">48,000 Hz (Max Quality)</option>
-            <option value="44100" selected>44,100 Hz (Standard High-Def)</option>
-            <option value="24000">24,000 Hz (Turbo Models)</option>
-            <option value="16000">16,000 Hz (Basic)</option>
-            <option value="8000">8,000 Hz (Phone)</option>
-        </select>
-    </div>
+    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 8px;">SAMPLE RATE TUNER</label>
+    <select id="rateSelect" onchange="restartEngine()">
+        <option value="48000">48,000 Hz (Max)</option>
+        <option value="44100">44,100 Hz (High Def)</option>
+        <option value="32000" selected>32,000 Hz (The Middle Way)</option>
+        <option value="24000">24,000 Hz (Turbo)</option>
+        <option value="16000">16,000 Hz (Standard)</option>
+    </select>
 
-    <button id="mainBtn" class="btn-primary" onclick="startCall()">🔴 Connect Audio</button>
-    <button id="syncBtn" class="btn-sync" onclick="forceSync()">⚡ SKIP LATENCY (Reset)</button>
+    <button id="mainBtn" class="btn-start" onclick="startCall()">🔴 Connect</button>
+    <button id="syncBtn" class="btn-sync" onclick="forceSync()">⚡ Reset Latency</button>
 
     <div class="stat-row">
         <span id="bufferStat">Buffer: 0ms</span>
-        <span id="packStat">Packets: 0</span>
+        <span id="statusText">Ready</span>
     </div>
 </div>
 
@@ -63,16 +91,13 @@
     let audioCtx = null;
     let nextTime = 0;
     let wssUrl = null;
-    let packetCount = 0;
-    let animationId;
     let analyser;
 
-    // 1. Grab URL automatically
     window.onload = () => {
         const params = new URLSearchParams(window.location.search);
         wssUrl = params.get('call');
         if (!wssUrl) {
-            document.getElementById('mainBtn').innerText = "❌ No URL Found";
+            document.getElementById('mainBtn').innerText = "❌ Missing Link";
             document.getElementById('mainBtn').disabled = true;
             document.getElementById('mainBtn').style.background = "#333";
         }
@@ -81,122 +106,88 @@
     function startCall() {
         if (!wssUrl) return;
 
-        // Init Audio Context
+        // Init Audio Context with selected rate
         const rate = parseInt(document.getElementById('rateSelect').value);
         audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
         
-        // Setup Visualizer
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
         analyser.connect(audioCtx.destination);
 
-        // Connect WebSocket
         socket = new WebSocket(wssUrl);
         socket.binaryType = "arraybuffer";
 
-        // UI Updates
-        document.getElementById('mainBtn').disabled = true;
         document.getElementById('mainBtn').innerText = "Connecting...";
 
         socket.onopen = () => {
-            document.getElementById('statusBadge').innerText = "LIVE STREAM";
-            document.getElementById('statusBadge').classList.add("live");
             document.getElementById('mainBtn').style.display = "none";
-            document.getElementById('syncBtn').style.display = "block"; // Show Panic Button
-            nextTime = audioCtx.currentTime + 0.1; // Start buffer slightly ahead
+            document.getElementById('syncBtn').style.display = "block";
+            document.getElementById('statusText').innerText = "CONNECTED";
+            document.getElementById('statusText').style.color = "#4ade80";
+            nextTime = audioCtx.currentTime + 0.1; 
             animate();
         };
 
         socket.onmessage = (event) => {
-            if (event.data instanceof ArrayBuffer) {
-                packetCount++;
-                document.getElementById('packStat').innerText = `Packets: ${packetCount}`;
-                playChunk(event.data);
-            }
+            if (event.data instanceof ArrayBuffer) playChunk(event.data);
         };
 
         socket.onclose = () => {
-            document.getElementById('statusBadge').innerText = "ENDED";
-            document.getElementById('statusBadge').classList.remove("live");
-            cancelAnimationFrame(animationId);
+            document.getElementById('statusText').innerText = "ENDED";
+            document.getElementById('statusText').style.color = "#666";
+            document.getElementById('syncBtn').innerText = "Call Ended";
+            document.getElementById('syncBtn').disabled = true;
+            document.getElementById('syncBtn').style.background = "#333";
         };
     }
 
-    // ⚡ CORE AUDIO ENGINE
     function playChunk(arrayBuffer) {
-        // Convert Raw PCM (Int16) to Float32
         const int16 = new Int16Array(arrayBuffer);
         const float32 = new Float32Array(int16.length);
-        for (let i = 0; i < int16.length; i++) {
-            float32[i] = int16[i] / 32768; 
-        }
+        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768; 
 
-        // Create Buffer with SELECTED Rate
+        // Use current selected rate for buffer
         const selectedRate = parseInt(document.getElementById('rateSelect').value);
         const buffer = audioCtx.createBuffer(1, float32.length, selectedRate);
         buffer.getChannelData(0).set(float32);
 
-        // 🧠 LATENCY KILLER LOGIC
-        // If nextTime is in the past (lag), reset to now
-        if (nextTime < audioCtx.currentTime) {
-            nextTime = audioCtx.currentTime;
-        }
-        
-        // If nextTime is too far in future (>300ms), we are drifting. Skip ahead.
-        // This solves the "late" audio problem.
-        if (nextTime > audioCtx.currentTime + 0.3) {
-            // console.log("Drift detected. Skipping...");
-            nextTime = audioCtx.currentTime + 0.05;
-        }
+        // Latency Killer
+        if (nextTime < audioCtx.currentTime) nextTime = audioCtx.currentTime;
+        if (nextTime > audioCtx.currentTime + 0.2) nextTime = audioCtx.currentTime + 0.05; // Tight sync
 
-        // Schedule Playback
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
         source.connect(analyser);
         source.start(nextTime);
-        
         nextTime += buffer.duration;
 
-        // Update Stats
-        const lag = Math.round((nextTime - audioCtx.currentTime) * 1000);
-        document.getElementById('bufferStat').innerText = `Buffer: ${lag}ms`;
-        
-        // Color code the lag
-        document.getElementById('bufferStat').style.color = lag > 300 ? "#ef4444" : "#666";
+        document.getElementById('bufferStat').innerText = `Lag: ${Math.round((nextTime - audioCtx.currentTime) * 1000)}ms`;
     }
 
     function forceSync() {
-        if(audioCtx) {
-            nextTime = audioCtx.currentTime; // Hard reset time
-            document.getElementById('bufferStat').innerText = "Synced!";
-        }
+        if(audioCtx) nextTime = audioCtx.currentTime; 
     }
 
     function restartEngine() {
         if(socket && socket.readyState === WebSocket.OPEN) {
             audioCtx.close().then(() => {
-                // Re-init with new rate
                 const rate = parseInt(document.getElementById('rateSelect').value);
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 64;
                 analyser.connect(audioCtx.destination);
                 nextTime = audioCtx.currentTime;
             });
         }
     }
 
-    // Visualizer Loop
     function animate() {
         if(!analyser) return;
         const data = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(data);
-        const bars = document.querySelectorAll('.bar');
-        bars.forEach((bar, i) => {
-            const h = Math.max(5, data[i] / 3);
-            bar.style.height = `${h}px`;
+        document.querySelectorAll('.bar').forEach((bar, i) => {
+            bar.style.height = Math.max(4, data[i*2] / 3) + 'px';
         });
-        animationId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
     }
 </script>
 
