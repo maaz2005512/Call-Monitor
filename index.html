@@ -3,193 +3,418 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>⚡ Vapi Monitor</title>
+    <title>Vapi Glass OS</title>
     <style>
-        /* 📱 MOBILE LAYOUT FIXES */
+        /* 🎨 DYNAMIC THEME VARIABLES */
+        :root {
+            /* ☀️ LIGHT MODE (Default) */
+            --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --glass-card: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            --text-main: #1d1d1f;
+            --text-sub: #6e6e73;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --chat-bg: rgba(255, 255, 255, 0.5);
+            --chat-bubble: #ffffff;
+            --btn-bg: rgba(255, 255, 255, 0.7);
+            --btn-text: #000;
+            --option-bg: #ffffff;
+        }
+
+        /* 🌙 DARK MODE OVERRIDES */
+        body.dark-mode {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --glass-card: rgba(20, 20, 20, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            --text-main: #ffffff;
+            --text-sub: #a1a1aa;
+            --input-bg: rgba(40, 40, 40, 0.8);
+            --chat-bg: rgba(0, 0, 0, 0.3);
+            --chat-bubble: #27272a;
+            --btn-bg: rgba(50, 50, 50, 0.8);
+            --btn-text: #fff;
+            --option-bg: #1e1e1e;
+        }
+
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #000; 
-            color: white; 
-            margin: 0; 
-            padding: 0;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            min-height: 100dvh; /* FIX: Dynamic height handles mobile address bars */
-            overflow: hidden; /* Prevents scroll bounce */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif; 
+            background: var(--bg-gradient);
+            color: var(--text-main); 
+            margin: 0; padding: 0;
+            display: flex; align-items: center; justify-content: center; 
+            min-height: 100dvh;
+            overflow: hidden;
+            transition: background 0.5s ease;
         }
 
-        .card { 
-            background: #111; 
-            border: 1px solid #333; 
-            padding: 24px; 
-            border-radius: 24px; 
-            width: 85%; 
-            max-width: 380px; 
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        .glass-card {
+            background: var(--glass-card);
+            backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px);
+            border: 1px solid var(--glass-border);
+            border-radius: 36px;
+            box-shadow: var(--glass-shadow);
+            width: 90%; max-width: 420px;
+            height: 90dvh; max-height: 850px;
+            padding: 24px;
+            display: flex; flex-direction: column;
+            position: relative;
+            box-sizing: border-box;
+            transition: background 0.3s ease, border 0.3s ease;
         }
-        
-        /* Audio Visualizer */
-        .visualizer { display: flex; justify-content: center; align-items: flex-end; height: 50px; gap: 6px; margin: 25px 0; }
-        .bar { width: 8px; background: #4ade80; border-radius: 99px; height: 5px; transition: height 0.05s ease; }
 
-        /* Controls */
-        select { 
-            width: 100%; padding: 16px; margin-top: 10px; border-radius: 12px; 
-            font-size: 16px; border: 1px solid #444; background: #222; color: #fff; 
-            appearance: none; text-align: center;
+        /* 📊 HEADER LAYOUT (Fixed Overlap) */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-top: 5px;
+            position: relative;
         }
         
-        button { 
-            width: 100%; padding: 18px; margin-top: 15px; border-radius: 14px; 
-            font-size: 17px; font-weight: 700; border: none; cursor: pointer; 
+        .header-left { display: flex; align-items: center; }
+        
+        .header-right { 
+            display: flex; align-items: center; gap: 8px; /* Spacing between Latency & Moon */
+        }
+
+        .badge {
+            background: var(--btn-bg);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* 🎨 THEME TOGGLE (Vector) */
+        .theme-switch {
+            width: 34px; height: 34px;
+            background: var(--btn-bg);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s, background 0.3s;
+            color: var(--text-main);
+        }
+        .theme-switch:active { transform: scale(0.9); }
+        .theme-switch svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* 🔧 HERTZ SELECTOR (Fixed Visibility) */
+        #rateSelect {
+            background: transparent; 
+            border: none; 
+            color: var(--text-main); /* Adapts to Dark Mode */
+            font-size: 12px; font-weight: 700; 
+            outline: none; -webkit-appearance: none;
+            cursor: pointer;
+        }
+        
+        /* Dropdown Options Color Fix */
+        option {
+            background-color: var(--option-bg);
+            color: var(--text-main);
+        }
+
+        .title {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            font-weight: 700; font-size: 15px; letter-spacing: 1px;
+            opacity: 0.8; text-transform: uppercase;
+        }
+
+        /* 🌊 WAVEFORM */
+        canvas { 
+            width: 100%; height: 90px; 
+            border-radius: 20px; margin-bottom: 15px; flex-shrink: 0;
+            background: rgba(0,0,0,0.02);
+        }
+
+        /* 💬 CHAT AREA */
+        .chat-container {
+            flex-grow: 1; 
+            background: var(--chat-bg);
+            border-radius: 24px;
+            padding: 15px; margin-bottom: 20px;
+            overflow-y: auto; 
+            display: flex; flex-direction: column; gap: 10px;
+            min-height: 0;
+            transition: background 0.3s;
+        }
+
+        .chat-bubble {
+            background: var(--chat-bubble); color: var(--text-main);
+            padding: 12px 18px; border-radius: 18px 18px 18px 4px;
+            font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            align-self: flex-start; max-width: 85%;
+            line-height: 1.4;
+            animation: popUp 0.3s ease;
+        }
+        .chat-bubble.system {
+            background: rgba(128,128,128,0.15); color: var(--text-sub); 
+            font-size: 12px; align-self: center; border-radius: 12px; padding: 6px 12px;
+        }
+        @keyframes popUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ⌨️ INPUT AREA */
+        .input-wrapper {
+            position: relative; width: 100%; margin-bottom: 25px; flex-shrink: 0;
+        }
+        input {
+            width: 100%; padding: 18px 55px 18px 20px;
+            border-radius: 30px; border: none; outline: none;
+            background: var(--input-bg); color: var(--text-main);
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .send-btn {
+            position: absolute; right: 8px; top: 8px;
+            width: 40px; height: 40px;
+            background: #000; border-radius: 50%; border: none;
+            color: white; font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
             transition: transform 0.1s;
         }
-        .btn-start { background: #2563eb; color: white; }
-        .btn-sync { background: #dc2626; color: white; display: none; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
+        body.dark-mode .send-btn { background: #fff; color: #000; }
+        .send-btn:active { transform: scale(0.9); }
 
-        .stat-row { 
-            display: flex; justify-content: space-between; font-size: 11px; 
-            color: #666; margin-top: 20px; font-family: monospace; text-transform: uppercase; letter-spacing: 1px;
+        /* 🔘 CONTROLS */
+        .controls {
+            display: flex; gap: 15px; justify-content: center; align-items: center; flex-shrink: 0;
+        }
+        .btn-pill {
+            padding: 14px 24px; border-radius: 24px; border: none;
+            font-weight: 600; font-size: 13px; cursor: pointer;
+            background: var(--btn-bg); color: var(--btn-text);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.3s, color 0.3s;
+        }
+        .btn-pill:hover { transform: translateY(-2px); }
+        .btn-end {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: #ff453a; color: white; border: none;
+            font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(255, 69, 58, 0.4);
+            transition: transform 0.2s;
+        }
+        .btn-end:active { transform: scale(0.9); }
+
+        /* 🪟 MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(10px);
+            z-index: 100; display: none; align-items: center; justify-content: center;
+        }
+        .modal-card {
+            background: var(--glass-card); border: 1px solid var(--glass-border);
+            padding: 30px; border-radius: 30px; width: 80%; max-width: 300px; text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3); color: var(--text-main);
         }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div style="color: #888; font-size: 12px; margin-bottom: 5px; font-weight: 600;">LIVE STREAM</div>
-    <h2 style="margin: 0; font-weight: 800; letter-spacing: -0.5px;">Live Call</h2>
+    <div class="glass-card">
+        <div class="header">
+            <div class="header-left">
+                <div class="badge">
+                    ⚡ 
+                    <select id="rateSelect" onchange="restartEngine()">
+                        <option value="32000">32k</option>
+                        <option value="44100">44k</option>
+                        <option value="24000">24k</option>
+                    </select>
+                </div>
+            </div>
 
-    <div class="visualizer" id="visualizer">
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div>
+            <div class="title">LIVE CALL</div>
+
+            <div class="header-right">
+                <div class="badge" id="latencyStat">0ms</div>
+                <div class="theme-switch" onclick="toggleTheme()" id="themeIcon">
+                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="waveCanvas"></canvas>
+
+        <div class="chat-container" id="chatBox">
+            <div class="chat-bubble system">System Ready...</div>
+        </div>
+
+        <div class="input-wrapper">
+            <input type="text" id="speakInput" placeholder="Type message...">
+            <button class="send-btn" onclick="sendInjection()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+            </button>
+        </div>
+
+        <div class="controls">
+            <button class="btn-pill" onclick="forceSync()">Reset</button>
+            <button class="btn-end" onclick="endCall()">📞</button>
+            <button class="btn-pill" onclick="openTransfer()">Transfer</button>
+        </div>
     </div>
 
-    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 8px;">SAMPLE RATE TUNER</label>
-    <select id="rateSelect" onchange="restartEngine()">
-        <option value="48000">48,000 Hz (Max)</option>
-        <option value="44100">44,100 Hz (High Def)</option>
-        <option value="32000" selected>32,000 Hz (The Middle Way)</option>
-        <option value="24000">24,000 Hz (Turbo)</option>
-        <option value="16000">16,000 Hz (Standard)</option>
-    </select>
-
-    <button id="mainBtn" class="btn-start" onclick="startCall()">🔴 Connect</button>
-    <button id="syncBtn" class="btn-sync" onclick="forceSync()">⚡ Reset Latency</button>
-
-    <div class="stat-row">
-        <span id="bufferStat">Buffer: 0ms</span>
-        <span id="statusText">Ready</span>
+    <div class="modal-overlay" id="transferModal">
+        <div class="modal-card">
+            <h3 style="margin:0 0 15px 0;">Transfer Call</h3>
+            <input type="tel" id="transferInput" placeholder="+1 555..." style="margin-bottom:15px; background:rgba(128,128,128,0.1); width:100%; padding:14px; border-radius:12px; border:none; color:var(--text-main);">
+            <button class="btn-pill" style="width:100%; background:#32d74b; color:white;" onclick="sendTransfer()">Connect</button>
+            <button class="btn-pill" style="width:100%; margin-top:10px; background:transparent; border:1px solid var(--text-sub);" onclick="closeTransfer()">Cancel</button>
+        </div>
     </div>
-</div>
 
 <script>
-    let socket = null;
-    let audioCtx = null;
-    let nextTime = 0;
-    let wssUrl = null;
-    let analyser;
+    let socket, audioCtx, analyser, nextTime = 0, wssUrl, controlUrl, canvas, ctx;
+
+    // 🎨 THEME TOGGLE LOGIC (Vector SVGs)
+    const moonSVG = '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+    const sunSVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('themeIcon');
+        body.classList.toggle('dark-mode');
+        
+        if(body.classList.contains('dark-mode')) {
+            icon.innerHTML = sunSVG;
+        } else {
+            icon.innerHTML = moonSVG;
+        }
+    }
 
     window.onload = () => {
         const params = new URLSearchParams(window.location.search);
         wssUrl = params.get('call');
-        if (!wssUrl) {
-            document.getElementById('mainBtn').innerText = "❌ Missing Link";
-            document.getElementById('mainBtn').disabled = true;
-            document.getElementById('mainBtn').style.background = "#333";
-        }
+        controlUrl = params.get('control');
+
+        canvas = document.getElementById('waveCanvas');
+        ctx = canvas.getContext('2d');
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        if (wssUrl) startCall();
+        else addMsg("⚠️ Link Missing", "system");
     };
 
-    function startCall() {
-        if (!wssUrl) return;
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 90;
+    }
 
-        // Init Audio Context with selected rate
+    function startCall() {
         const rate = parseInt(document.getElementById('rateSelect').value);
         audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
-        
         analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
+        analyser.fftSize = 256;
         analyser.connect(audioCtx.destination);
 
         socket = new WebSocket(wssUrl);
         socket.binaryType = "arraybuffer";
 
-        document.getElementById('mainBtn').innerText = "Connecting...";
-
         socket.onopen = () => {
-            document.getElementById('mainBtn').style.display = "none";
-            document.getElementById('syncBtn').style.display = "block";
-            document.getElementById('statusText').innerText = "CONNECTED";
-            document.getElementById('statusText').style.color = "#4ade80";
-            nextTime = audioCtx.currentTime + 0.1; 
-            animate();
+            addMsg("🟢 Connected", "system");
+            nextTime = audioCtx.currentTime + 0.1;
+            drawWaveform();
         };
 
-        socket.onmessage = (event) => {
-            if (event.data instanceof ArrayBuffer) playChunk(event.data);
+        socket.onmessage = (e) => {
+            if (e.data instanceof ArrayBuffer) playChunk(e.data);
         };
 
-        socket.onclose = () => {
-            document.getElementById('statusText').innerText = "ENDED";
-            document.getElementById('statusText').style.color = "#666";
-            document.getElementById('syncBtn').innerText = "Call Ended";
-            document.getElementById('syncBtn').disabled = true;
-            document.getElementById('syncBtn').style.background = "#333";
-        };
+        socket.onclose = () => addMsg("🔴 Call Ended", "system");
     }
 
-    function playChunk(arrayBuffer) {
-        const int16 = new Int16Array(arrayBuffer);
+    function playChunk(buffer) {
+        const int16 = new Int16Array(buffer);
         const float32 = new Float32Array(int16.length);
         for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768; 
 
-        // Use current selected rate for buffer
-        const selectedRate = parseInt(document.getElementById('rateSelect').value);
-        const buffer = audioCtx.createBuffer(1, float32.length, selectedRate);
-        buffer.getChannelData(0).set(float32);
+        const srcBuffer = audioCtx.createBuffer(1, float32.length, parseInt(document.getElementById('rateSelect').value));
+        srcBuffer.getChannelData(0).set(float32);
 
-        // Latency Killer
         if (nextTime < audioCtx.currentTime) nextTime = audioCtx.currentTime;
-        if (nextTime > audioCtx.currentTime + 0.2) nextTime = audioCtx.currentTime + 0.05; // Tight sync
+        if (nextTime > audioCtx.currentTime + 0.2) nextTime = audioCtx.currentTime + 0.05;
 
         const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
+        source.buffer = srcBuffer;
         source.connect(analyser);
         source.start(nextTime);
-        nextTime += buffer.duration;
+        nextTime += srcBuffer.duration;
 
-        document.getElementById('bufferStat').innerText = `Lag: ${Math.round((nextTime - audioCtx.currentTime) * 1000)}ms`;
+        document.getElementById('latencyStat').innerText = Math.round((nextTime - audioCtx.currentTime) * 1000) + "ms";
     }
 
-    function forceSync() {
-        if(audioCtx) nextTime = audioCtx.currentTime; 
+    function drawWaveform() {
+        requestAnimationFrame(drawWaveform);
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteTimeDomainData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+        
+        const isDark = document.body.classList.contains('dark-mode');
+        ctx.strokeStyle = isDark ? '#ffffff' : '#000000'; 
+        
+        ctx.beginPath();
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
+        for(let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = v * canvas.height/2;
+            if(i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            x += sliceWidth;
+        }
+        ctx.stroke();
     }
 
-    function restartEngine() {
-        if(socket && socket.readyState === WebSocket.OPEN) {
-            audioCtx.close().then(() => {
-                const rate = parseInt(document.getElementById('rateSelect').value);
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
-                analyser = audioCtx.createAnalyser();
-                analyser.connect(audioCtx.destination);
-                nextTime = audioCtx.currentTime;
-            });
+    async function callVapi(body) {
+        if(!controlUrl) return alert("No Control URL");
+        await fetch(controlUrl, { method: "POST", body: JSON.stringify(body) });
+    }
+
+    function sendInjection() {
+        const txt = document.getElementById('speakInput').value;
+        if(txt) {
+            addMsg(txt);
+            callVapi({ type: "say", message: txt });
+            document.getElementById('speakInput').value = "";
         }
     }
 
-    function animate() {
-        if(!analyser) return;
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(data);
-        document.querySelectorAll('.bar').forEach((bar, i) => {
-            bar.style.height = Math.max(4, data[i*2] / 3) + 'px';
-        });
-        requestAnimationFrame(animate);
+    function endCall() {
+        if(confirm("End Call?")) callVapi({ type: "end-call" });
+    }
+
+    function openTransfer() { document.getElementById('transferModal').style.display = 'flex'; }
+    function closeTransfer() { document.getElementById('transferModal').style.display = 'none'; }
+    function sendTransfer() {
+        const num = document.getElementById('transferInput').value;
+        if(num) {
+            callVapi({ type: "transfer", destination: { type: "number", number: num } });
+            addMsg("↪ Transferring: " + num, "system");
+            closeTransfer();
+        }
+    }
+
+    function forceSync() { if(audioCtx) nextTime = audioCtx.currentTime; }
+    function restartEngine() { if(socket) { audioCtx.close().then(() => startCall()); } }
+    function addMsg(text, type) {
+        const box = document.getElementById('chatBox');
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${type || ''}`;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
     }
 </script>
-
 </body>
 </html>
