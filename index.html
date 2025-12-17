@@ -384,24 +384,47 @@
     }
 
     // 📡 CONTROL LOGIC (Updated for No Auth)
+   // 📡 CONTROL LOGIC (With CORS Fix)
     async function callVapi(body) {
         if (!controlUrl) return alert("Error: Control URL missing from link.");
-        
+
+        // 1. Try Direct Call (Standard)
         try {
+            console.log("Attempting direct call...");
             const response = await fetch(controlUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
             });
+
+            if (!response.ok) throw new Error("Direct call blocked");
+            console.log("Command sent successfully!");
+
+        } catch (directError) {
             
-            if (!response.ok) {
-                // If Vapi returns an error, try to parse it
-                const errText = await response.text();
-                console.error("Vapi Error:", errText);
+            // 2. If Direct Fails (CORS), Try via Proxy
+            console.warn("Direct call failed (likely CORS). Retrying with Proxy...");
+            
+            try {
+                // We use a free CORS proxy to bypass the browser restriction
+                const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(controlUrl);
+                
+                const proxyResponse = await fetch(proxyUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                if (!proxyResponse.ok) {
+                    const errText = await proxyResponse.text();
+                    throw new Error("Proxy failed: " + errText);
+                }
+                console.log("Command sent via Proxy!");
+
+            } catch (proxyError) {
+                alert("Command Failed: " + proxyError.message);
+                console.error(proxyError);
             }
-        } catch (e) {
-            alert("Command Failed: " + e.message);
-            console.error(e);
         }
     }
 
