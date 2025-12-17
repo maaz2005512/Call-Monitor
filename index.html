@@ -64,7 +64,7 @@
             transition: background 0.3s ease, border 0.3s ease;
         }
 
-        /* 📊 HEADER LAYOUT (Fixed Overlap) */
+        /* 📊 HEADER LAYOUT */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px; padding-top: 5px;
@@ -74,7 +74,7 @@
         .header-left { display: flex; align-items: center; }
         
         .header-right { 
-            display: flex; align-items: center; gap: 8px; /* Spacing between Latency & Moon */
+            display: flex; align-items: center; gap: 8px; 
         }
 
         .badge {
@@ -102,17 +102,16 @@
         .theme-switch:active { transform: scale(0.9); }
         .theme-switch svg { width: 18px; height: 18px; fill: currentColor; }
 
-        /* 🔧 HERTZ SELECTOR (Fixed Visibility) */
+        /* 🔧 HERTZ SELECTOR */
         #rateSelect {
             background: transparent; 
             border: none; 
-            color: var(--text-main); /* Adapts to Dark Mode */
+            color: var(--text-main); 
             font-size: 12px; font-weight: 700; 
             outline: none; -webkit-appearance: none;
             cursor: pointer;
         }
         
-        /* Dropdown Options Color Fix */
         option {
             background-color: var(--option-bg);
             color: var(--text-main);
@@ -264,7 +263,7 @@
     <div class="modal-overlay" id="transferModal">
         <div class="modal-card">
             <h3 style="margin:0 0 15px 0;">Transfer Call</h3>
-            <input type="tel" id="transferInput" placeholder="+1 555..." style="margin-bottom:15px; background:rgba(128,128,128,0.1); width:100%; padding:14px; border-radius:12px; border:none; color:var(--text-main);">
+            <input type="tel" id="transferInput" placeholder="+1 555..." style="margin-bottom:15px; background:rgba(128,128,128,0.1); width:100%; padding:14px; border-radius:12px; border:none; color:var(--text-main); box-sizing: border-box;">
             <button class="btn-pill" style="width:100%; background:#32d74b; color:white;" onclick="sendTransfer()">Connect</button>
             <button class="btn-pill" style="width:100%; margin-top:10px; background:transparent; border:1px solid var(--text-sub);" onclick="closeTransfer()">Cancel</button>
         </div>
@@ -273,7 +272,7 @@
 <script>
     let socket, audioCtx, analyser, nextTime = 0, wssUrl, controlUrl, canvas, ctx;
 
-    // 🎨 THEME TOGGLE LOGIC (Vector SVGs)
+    // 🎨 THEME TOGGLE LOGIC
     const moonSVG = '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
     const sunSVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
 
@@ -289,6 +288,7 @@
         }
     }
 
+    // 🚀 INITIALIZATION
     window.onload = () => {
         const params = new URLSearchParams(window.location.search);
         wssUrl = params.get('call');
@@ -299,8 +299,15 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        if (wssUrl) startCall();
-        else addMsg("⚠️ Link Missing", "system");
+        if (wssUrl) {
+            startCall();
+        } else {
+            addMsg("⚠️ Link Missing", "system");
+        }
+
+        if (controlUrl) {
+            addMsg("🎮 Control Enabled", "system");
+        }
     };
 
     function resizeCanvas() {
@@ -308,6 +315,7 @@
         canvas.height = 90;
     }
 
+    // 🎧 AUDIO ENGINE
     function startCall() {
         const rate = parseInt(document.getElementById('rateSelect').value);
         audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: rate });
@@ -359,7 +367,6 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.lineWidth = 2;
-        
         const isDark = document.body.classList.contains('dark-mode');
         ctx.strokeStyle = isDark ? '#ffffff' : '#000000'; 
         
@@ -376,15 +383,32 @@
         ctx.stroke();
     }
 
+    // 📡 CONTROL LOGIC (Updated for No Auth)
     async function callVapi(body) {
-        if(!controlUrl) return alert("No Control URL");
-        await fetch(controlUrl, { method: "POST", body: JSON.stringify(body) });
+        if (!controlUrl) return alert("Error: Control URL missing from link.");
+        
+        try {
+            const response = await fetch(controlUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            
+            if (!response.ok) {
+                // If Vapi returns an error, try to parse it
+                const errText = await response.text();
+                console.error("Vapi Error:", errText);
+            }
+        } catch (e) {
+            alert("Command Failed: " + e.message);
+            console.error(e);
+        }
     }
 
     function sendInjection() {
         const txt = document.getElementById('speakInput').value;
         if(txt) {
-            addMsg(txt);
+            addMsg("You: " + txt);
             callVapi({ type: "say", message: txt });
             document.getElementById('speakInput').value = "";
         }
@@ -396,11 +420,12 @@
 
     function openTransfer() { document.getElementById('transferModal').style.display = 'flex'; }
     function closeTransfer() { document.getElementById('transferModal').style.display = 'none'; }
+    
     function sendTransfer() {
         const num = document.getElementById('transferInput').value;
         if(num) {
             callVapi({ type: "transfer", destination: { type: "number", number: num } });
-            addMsg("↪ Transferring: " + num, "system");
+            addMsg("↪ Transferring to " + num, "system");
             closeTransfer();
         }
     }
